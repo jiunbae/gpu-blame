@@ -8,22 +8,18 @@ def execute(commands, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDO
     return (out if not err else err).decode('utf-8').split()
 
 def inspect():
-    devices = list(map(int, execute('''nvidia-smi | awk '$2=="Processes:" {p=1} p && $2 ~ /^[0-9]+$/ {print $2, $3}' ''')))
-    containers = execute('docker ps --format "{{ .Names }}"')
+    containers = execute('docker ps --format "{{ .Names }},{{ .Status }}"')
     processes = list(map(lambda c: list(map(int, execute("docker top {} | awk '{}'".format(c, '{p=1} p && $2 ~ /^[0-9]+$/ {print $2}')))), containers))
-    gpus, gprocs = devices[::2], devices[1::2]
-    
-    for gpu, proc in zip(gpus, gprocs):
-        belongs = next(c for c, ps in zip(containers, processes) if proc in ps)
-        yield gpu, proc, belongs
+    devices = list(map(int, execute('''nvidia-smi | awk '$2=="Processes:" {p=1} p && $2 ~ /^[0-9]+$/ {print $2, $3}' ''')))
+
+    for gpu, proc in zip(devices[::2], devices[1::2]):
+        yield gpu, proc, *next(c.split(',') for c, ps in zip(containers, processes) if proc in ps)
 
 app = Flask(__name__)
 
 @app.route('/')
 def blame():
-    gpus = list(inspect())
-    print (gpus)
-    return render_template('blame.html', gpus=gpus)
+    return render_template('blame.html', information=list(inspect()))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=6006, debug=True)

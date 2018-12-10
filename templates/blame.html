@@ -13,21 +13,18 @@
     <table class="table table-hover">
       <thead>
         <tr>
-          <th scope="col">#</th>
-          <th scope="col">PID</th>
-          <th scope="col">Container</th>
-          <th scope="col">Memory</th>
-          <th scope="col">Status</th>
+          {% for col in columns %}
+            <th scope="col">{{ col }}</th>
+          {% endfor %}
         </tr>
       </thead>
       <tbody>
-        {% for gpu, pid, mem, container, status in information %}
+        {% for num, line in information %}
         <tr>
-          <th scope="row">{{ gpu }}</th>
-          <td>{{ pid }}</td>
-          <td>{{ container }}</td>
-          <td>{{ mem }}</td>
-          <td>{{ status }}</td>
+          <th scope="row">{{ num }}</th>
+          {% for elem in line %}
+            <td>{{ elem }}</td>
+          {% endfor %}
         </tr>
         {% endfor %}
       </tbody>

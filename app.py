@@ -9,6 +9,8 @@ class Inspect:
     cache = list()
     last = datetime.now()
 
+    columns = "#,PID,Container,Status,CPU,Memory".split(',')
+
     @staticmethod
     def __exe(commands, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT):
         process = subprocess.Popen(commands, shell=shell, stdout=stdout, stderr=stderr)
@@ -19,10 +21,11 @@ class Inspect:
     def __inspect():
         containers = list(map(partial(str.split, sep=','), Inspect.__exe('docker ps --format "{{ .Names }},{{ .Status }}"').splitlines()))
         processes = list(map(lambda c: Inspect.__exe("docker top {} | awk '{}'".format(c[0], '{p=1} p && $2 ~ /^[0-9]+$/ {print $2}')).split(), containers))
-        devices = Inspect.__exe('''nvidia-smi | awk '$2=="Processes:" {p=1} p && $2 ~ /^[0-9]+$/ {print $2, $3, $6}' ''').split()
+        devices = Inspect.__exe('''nvidia-smi | awk '$2=="Processes:" {p=1} p && $2 ~ /^[0-9]+$/ {print $2, $3}' ''').split()
+        utils = list(map(partial(str.split, sep=','), Inspect.__exe('''nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv,noheader''').splitlines()))
 
-        for gpu, proc, mem in zip(devices[::3], devices[1::3], devices[2::3]):
-            yield (gpu, proc, mem, *next(c for c, ps in zip(containers, processes) if proc in ps))
+        for gpu, proc in zip(devices[::2], devices[1::2]):
+            yield (gpu, [proc, *next(c for c, ps in zip(containers, processes) if proc in ps), *utils[int(gpu)]])
 
     @staticmethod
     def update():
@@ -47,7 +50,7 @@ def refresh():
 @app.route('/')
 def blame():
     info, stamp = Inspect.info()
-    return render_template('blame.html', information=info, stamp=stamp.strftime("%Y-%m-%d %H:%M"))
+    return render_template('blame.html', columns=Inspect.columns, information=info, stamp=stamp.strftime("%Y-%m-%d %H:%M"))
 
 if __name__ == '__main__':
     Inspect.update()

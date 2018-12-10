@@ -6,6 +6,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, render_template, redirect, url_for
 
 class Inspect:
+    cache = list()
+    last = datetime.now()
 
     @staticmethod
     def __exe(commands, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT):
@@ -27,7 +29,6 @@ class Inspect:
         Inspect.cache = list(Inspect.__inspect())
         Inspect.last = datetime.now()
 
-    @property
     @staticmethod
     def info():
         return Inspect.cache, Inspect.last
@@ -35,18 +36,19 @@ class Inspect:
 app = Flask(__name__)
 
 scheduler = BackgroundScheduler(daemon=True)
-scheduler.add_job(Inspect.update, 'interval', minutes=10)
+scheduler.add_job(Inspect.update, 'interval', minutes=1)
 scheduler.start()
 
-@app.route('/refresh'):
+@app.route('/refresh')
 def refresh():
     Inspect.update()
-    return redirect(url_for('/'))
+    return redirect(url_for('blame'))
 
 @app.route('/')
 def blame():
-    info, stamp = Inspect.info
-    return render_template('blame.html', information=info, stamp=stamp)
+    info, stamp = Inspect.info()
+    return render_template('blame.html', information=info, stamp=stamp.strftime("%Y-%m-%d %H:%M"))
 
 if __name__ == '__main__':
+    Inspect.update()
     app.run(host='0.0.0.0', port=6006, debug=True)

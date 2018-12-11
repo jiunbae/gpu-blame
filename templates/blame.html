@@ -32,10 +32,9 @@
     </table>
   </div>
   <footer class="footer">
-    <div class="container text-center">
-      <span class="text-muted">Last updated: </span>
-      <span class="text-muted">{{ stamp }}</span>
-    </div>
+    <form class="container text-center" action="/refresh" method="get">
+      <button type="submit" class="btn btn-outline-primary">Last Updated: {{ stamp }}</button>
+    </form>
   </footer>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.bundle.min.js"></script>

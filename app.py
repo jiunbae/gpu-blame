@@ -26,8 +26,15 @@ class Inspect:
         utils = list(map(partial(str.split, sep=','), Inspect.__exe('''nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv,noheader''').splitlines()))
         
         for gpu, proc in zip(map(int, devices[::2]), devices[1::2]):
-            container, status = next(c for c, ps in zip(containers, processes) if proc in ps)
-            yield (gpu, [proc, container, status, *stats[container], *utils[gpu]])
+            try:
+                container, status = next(c for c, ps in zip(containers, processes) if proc in ps)
+                cpu, mem = stats[container]
+            except StopIteration:
+                container = Inspect.__exe("ps -up {} | awk 'NR-1 > 0 {}'".format(proc, '{ print $1 }')).strip()
+                status = Inspect.__exe("lastlog -t 100 | grep {} | awk '{}'".format(container, '{ print $7 }'))
+                cpu, mem = Inspect.__exe("ps -p {} -o %cpu,%mem | awk 'NR-1 > 0 {}'".format(proc, '{ print $1, $2}')).split()
+
+            yield (gpu, [proc, container, status, cpu, mem, *utils[gpu]])
 
     @staticmethod
     def update():

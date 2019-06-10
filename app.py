@@ -34,6 +34,9 @@ class Inspect:
                 status = Inspect.__exe("lastlog -t 100 | grep {} | awk '{}'".format(container, '{ print $7 }'))
                 cpu, mem = Inspect.__exe("ps -p {} -o %cpu,%mem | awk 'NR-1 > 0 {}'".format(proc, '{ print $1, $2}')).split()
 
+                cpu = '{}%'.format(cpu)
+                mem = '{}GiB'.format(mem)
+
             yield (gpu, [proc, container, status, cpu, mem, *utils[gpu]])
 
     @staticmethod
@@ -63,4 +66,4 @@ def blame():
 
 if __name__ == '__main__':
     Inspect.update()
-    app.run(host='0.0.0.0', port=6006, debug=True)
+    app.run(host='0.0.0.0', port=8866, debug=True)
